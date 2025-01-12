@@ -1,21 +1,14 @@
 import fs from "fs";
-import { fileURLToPath } from "url";
 import { Worker } from "worker_threads";
 
 import { compile as typeconfCompile } from "./compile/compile.js";
 import initProject from "./init.js";
 import { log_event } from "./logging.js";
 import path from "path";
-import { PackageJson, readConfigFromFile } from "@typeconf/package-json";
 import { initPackageNonInteractive as initPackageImpl } from "./init.js";
 
 export const VERSION = (() => {
-  if (process.env["NODE_ENV"] == "dev") {
-    return "dev";
-  }
-  return readConfigFromFile<PackageJson>(
-    fileURLToPath(import.meta.resolve("../package.json")),
-  ).version;
+  return "dev";
 })();
 
 async function doCompile(configDir: string, logParams: Record<string, string>) {
