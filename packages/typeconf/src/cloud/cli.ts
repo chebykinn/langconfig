@@ -1,44 +1,89 @@
-import { Session, User } from "@supabase/supabase-js";
+import { AuthError } from "@supabase/supabase-js";
 import { log_event } from "../logging.js";
-import { supabase } from "./client.js";
+import { AuthSuccessResult, signIn, tryPerformAuthWithSessionFile } from "./auth.js";
 import { getConfigValue, updateConfigValue } from "./config-value.js";
+import prompts from "prompts";
 
-export type AuthSuccessResult = { user: User, session: Session };
+async function withCommandLogging<T>(
+    command: string,
+    params: Record<string, any>,
+    fn: () => Promise<T>
+): Promise<T> {
+    try {
+        await log_event("info", command, "start", params);
+        const result = await fn();
+        await log_event("info", command, "end", params);
+        return result;
+    } catch (error) {
+        await log_event("error", command, "failed", {
+            ...params,
+            error: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+    }
+}
 
-export async function performAuth(email: string, password: string): Promise<AuthSuccessResult | undefined> {
+export async function performAuth(): Promise<AuthSuccessResult | undefined> {
+    let res = tryPerformAuthWithSessionFile()
+    if (await res) {
+        console.log('Using existing session...');
+        return res;
+    }
+
+    const { email, password } = await prompts([
+        {
+            type: 'text',
+            name: 'email',
+            message: 'Enter your email:'
+        },
+        {
+            type: 'password',
+            name: 'password', 
+            message: 'Enter your password:'
+        }
+    ]);
+
     console.log(`Signing in as ${email}...`);
+    const authRes = await signIn(email, password)
     
-    const auth = await supabase().auth.signInWithPassword({
-        email,
-        password
-    })
-    
-    if (auth.error) {
-        await log_event("error", "cloud:auth", "failed", { error: auth.error.message });
-        console.error("Authentication failed:", auth.error.message);
+    if (authRes instanceof AuthError) {
+        await log_event("error", "cloud:auth", "failed", { error: authRes.message });
+        console.error("Authentication failed:", authRes.message);
         return undefined
     }
 
     console.log(`Signed in as ${email}...`);
 
-    return { user: auth.data.user, session: auth.data.session }
+    return { user: authRes.user, session: authRes.session }
 }
 
 export async function getCloudConfigValue(configName: string, projectId: string) {
-    await log_event("info", "cloud:update-config-value", "start", { configName, projectId: projectId });
-  
-    const res = await getConfigValue(configName, projectId)
-    console.log('Config was fetched from cloud: ');
-    console.log(res);
-    
-    await log_event("info", "cloud:update-config-value", "end", { configName, projectName: projectId });
+    await withCommandLogging(
+        "cloud:get-config-value",
+        { configName, projectId },
+        async () => {
+            await performAuth()
+
+            const res = await getConfigValue(configName, projectId);
+            console.log('Config was fetched from cloud: ');
+            console.log(res);
+        }
+    );
 }
   
-export async function setCloudConfigValue (configName: string, projectId: string, json: string) {
-    await log_event("info", "cloud:get-config-value", "start", { configName, projectId: projectId });
+export async function setCloudConfigValue(configName: string, projectId: string, json: string) {
+    await withCommandLogging(
+        "cloud:set-config-value",
+        { configName, projectId },
+        async () => {
+            await performAuth()
 
-    await updateConfigValue(configName, projectId, json)
-
-    // TODO: Implement cloud config fetch
-    await log_event("info", "cloud:get-config-value", "end", { configName, projectName: projectId });
+            try {
+                const res = await updateConfigValue(configName, projectId, json);
+                console.log(`Config value updated successfully. New revision: ${res as number}`);
+            } catch (err) {
+                console.log('Failed to update config value:', err);
+            }
+        }
+    );
 }
