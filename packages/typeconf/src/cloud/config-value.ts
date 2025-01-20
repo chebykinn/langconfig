@@ -1,5 +1,39 @@
 import { supabase } from "./client.js"
 
+async function getOrCreateProjectConfig(configName: string, projectId: string): Promise<{ id: string }> {
+    // First get the project config id
+    const { data: projectConfig, error: projectConfigError } = await supabase()
+        .from('project_configs')
+        .select('id')
+        .eq('project', projectId)
+        .eq('name', configName)
+        .maybeSingle()
+
+    if (projectConfigError) {
+        throw new Error("Can't perform project config search", { cause: projectConfigError })
+    }
+
+    if (!projectConfig) {
+        // Create new project config if it doesn't exist
+        const { data: newProjectConfig, error: createError } = await supabase()
+            .from('project_configs')
+            .insert({
+                project: projectId,
+                name: configName
+            })
+            .select('id')
+            .single()
+
+        if (createError) {
+            throw new Error("Failed to create project config", { cause: createError })
+        }
+
+        return newProjectConfig
+    }
+
+    return projectConfig
+}
+
 export async function getConfigValue(configName: string, projectId: string): Promise<string> {
     const { data, error } = await supabase()
         .from('config_values')
@@ -27,21 +61,7 @@ export async function getConfigValue(configName: string, projectId: string): Pro
 }
 
 export async function updateConfigValue(configName: string, projectId: string, newValue: string): Promise<number> {
-    // First get the project config id
-    const { data: projectConfig, error: projectConfigError } = await supabase()
-        .from('project_configs')
-        .select('id')
-        .eq('project', projectId)
-        .eq('name', configName)
-        .single()
-
-    if (projectConfigError) {
-        throw new Error("Can't find project config", { cause: projectConfigError })
-    }
-
-    if (!projectConfig) {
-        throw new Error('Project config not found')
-    }
+    const projectConfig = await getOrCreateProjectConfig(configName, projectId)
 
     // Insert the new value
     const { data: newConfigValue, error: insertError } = await supabase()
@@ -57,5 +77,5 @@ export async function updateConfigValue(configName: string, projectId: string, n
         throw new Error("Can't update config value", { cause: insertError })
     }
 
-    return newConfigValue.version as number
+    return newConfigValue.version
 }
