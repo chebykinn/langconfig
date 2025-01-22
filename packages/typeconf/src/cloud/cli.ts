@@ -1,7 +1,7 @@
 import { AuthError } from "@supabase/supabase-js";
 import { log_event } from "../logging.js";
 import { AuthSuccessResult, signIn, tryPerformAuthWithSessionFile } from "./auth.js";
-import { getConfigValue, updateConfigValue } from "./config-value.js";
+import { getConfigValue, getProjectByNameOrId, updateConfigValue } from "./config-value.js";
 import prompts from "prompts";
 
 async function withCommandLogging<T>(
@@ -57,29 +57,32 @@ export async function performAuth(): Promise<AuthSuccessResult | undefined> {
     return { user: authRes.user, session: authRes.session }
 }
 
-export async function getCloudConfigValue(configName: string, projectId: string) {
+export async function getCloudConfigValue(configName: string, projectNameOrId: string) {
     await withCommandLogging(
         "cloud:get-config-value",
-        { configName, projectId },
+        { configName, projectNameOrId },
         async () => {
             await performAuth()
 
-            const res = await getConfigValue(configName, projectId);
+            const project = await getProjectByNameOrId(projectNameOrId)
+            const res = await getConfigValue(configName, project.id);
+            
             console.log('Config was fetched from cloud: ');
             console.log(res);
         }
     );
 }
   
-export async function setCloudConfigValue(configName: string, projectId: string, json: string) {
+export async function setCloudConfigValue(configName: string, projectNameOrId: string, json: string) {
     await withCommandLogging(
         "cloud:set-config-value",
-        { configName, projectId },
+        { configName, projectNameOrId },
         async () => {
             await performAuth()
 
             try {
-                const res = await updateConfigValue(configName, projectId, json);
+                const project = await getProjectByNameOrId(projectNameOrId)
+                const res = await updateConfigValue(configName, project.id, json);
                 console.log(`Config value updated successfully. New revision: ${res as number}`);
             } catch (err) {
                 console.log('Failed to update config value:', err);

@@ -101,9 +101,6 @@ importers:
       '@typeconf/config-emitter':
         specifier: workspace:~
         version: link:../config-emitter
-      '@typeconf/package-json':
-        specifier: workspace:~
-        version: link:../package-json
       '@typespec/compiler':
         specifier: ^0.62.0
         version: 0.62.0
@@ -113,6 +110,9 @@ importers:
       prompts:
         specifier: ^2.4.2
         version: 2.4.2
+      uuid:
+        specifier: ^11.0.5
+        version: 11.0.5
     devDependencies:
       '@types/node':
         specifier: ^22.10.0
@@ -448,6 +448,10 @@ packages:
   unicorn-magic@0.1.0:
     resolution: {integrity: sha512-lRfVq8fE8gz6QMBuDM6a+LO3IAzTi05H6gCVaUpir2E1Rwpo4ZUog45KpNXKC/Mn3Yb9UDuHumeFTo9iV/D9FQ==}
     engines: {node: '>=18'}
+
+  uuid@11.0.5:
+    resolution: {integrity: sha512-508e6IcKLrhxKdBbcA2b4KQZlLVp2+J5UwQ6F7Drckkc5N9ZJwFa4TgWtsww9UG8fGHbm6gbV19TdM5pQ4GaIA==}
+    hasBin: true
 
   vscode-jsonrpc@8.2.0:
     resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
@@ -819,6 +823,8 @@ snapshots:
   undici-types@6.20.0: {}
 
   unicorn-magic@0.1.0: {}
+
+  uuid@11.0.5: {}
 
   vscode-jsonrpc@8.2.0: {}
 

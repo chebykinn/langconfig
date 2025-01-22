@@ -35,7 +35,7 @@ let cloud = program
 
 cloud
   .command("update-config-value <configName>")
-  .requiredOption("--project <id>", "Project id")
+  .requiredOption("--project <project>", "Project name or id")
   .requiredOption("--json <json>", "Json value")
   .description("Update configuration in cloud")
   .action(async (configName: string, options: { project: string, json: string }) => {
@@ -44,7 +44,7 @@ cloud
 
 cloud
   .command("get-config-value <configName>")
-  .requiredOption("--project <id>", "Project id")
+  .requiredOption("--project <project>", "Project name or id")
   .description("Fetch configuration from cloud")
   .action(async (configName: string, options: { project: string }) => {
     await getCloudConfigValue(configName, options.project)

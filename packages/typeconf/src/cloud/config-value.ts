@@ -1,4 +1,6 @@
+import { Database } from "../database.types.js"
 import { supabase } from "./client.js"
+import { validate as uuidValidate } from 'uuid';
 
 async function getOrCreateProjectConfig(configName: string, projectId: string): Promise<{ id: string }> {
     // First get the project config id
@@ -32,6 +34,36 @@ async function getOrCreateProjectConfig(configName: string, projectId: string): 
     }
 
     return projectConfig
+}
+
+export async function getProjectByNameOrId(project: string): Promise<Database['public']['Tables']['projects']['Row']> {
+    let laodByIdOrName = async () => {
+        return await supabase()
+            .from('projects')
+            .select()
+            .or(`name.eq."${project}",id.eq."${project}"`)
+            .single()
+    }
+
+    let loadByName = async () => {
+        return await supabase()
+            .from('projects')
+            .select()
+            .eq("name", project)
+            .maybeSingle()
+    }
+
+    const { data: projectData, error } = uuidValidate(project) ? await laodByIdOrName() : await loadByName()
+
+    if (error) {
+        throw new Error("Failed to get project", { cause: error })
+    }
+
+    if (!projectData) {
+        throw new Error(`Project '${project}' not found`)
+    }
+
+    return projectData
 }
 
 export async function getConfigValue(configName: string, projectId: string): Promise<string> {
