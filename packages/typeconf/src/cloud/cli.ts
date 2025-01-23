@@ -1,8 +1,9 @@
 import { AuthError } from "@supabase/supabase-js";
 import { log_event } from "../logging.js";
 import { AuthSuccessResult, signIn, tryPerformAuthWithSessionFile } from "./auth.js";
-import { getConfigValue, getProjectByNameOrId, updateConfigValue } from "./config-value.js";
+import { getConfigValue, getProjectByNameOrId, listConfigs, updateConfigValue } from "./config-value.js";
 import prompts from "prompts";
+import Table from "cli-table";
 
 async function withCommandLogging<T>(
     command: string,
@@ -86,6 +87,41 @@ export async function setCloudConfigValue(configName: string, projectNameOrId: s
                 console.log(`Config value updated successfully. New revision: ${res as number}`);
             } catch (err) {
                 console.log('Failed to update config value:', err);
+            }
+        }
+    );
+}
+
+export async function listUserConfigs(jsonOutput: boolean = false) {
+    await withCommandLogging(
+        "cloud:list-user-configs",
+        {},
+        async () => {
+            await performAuth()
+
+            try {
+                const configs = await listConfigs()
+
+                if (jsonOutput) {
+                    console.log(configs)
+                } else {
+                    const table = new Table({
+                        head: ['Project Name', 'Config Name'],
+                        colWidths: [30, 30],
+                        style: {
+                            head: ['gray']
+                        }
+                    });
+
+                    const rows = configs
+                        .sort((a, b) => a.project.name.localeCompare(b.project.name))
+                        .map(config => [config.project.name, config.name]);
+
+                    table.push(...rows);
+                    console.log(table.toString());
+                }
+            } catch (err) {
+                console.log('Failed to list configs:', err);
             }
         }
     );

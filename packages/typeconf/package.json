@@ -45,7 +45,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.46.1",
     "@typeconf/config-emitter": "workspace:~",
+    "@types/cli-table": "^0.3.4",
     "@typespec/compiler": "^0.62.0",
+    "cli-table": "^0.3.11",
     "commander": "^12.1.0",
     "prompts": "^2.4.2",
     "uuid": "^11.0.5"

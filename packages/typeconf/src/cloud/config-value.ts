@@ -36,6 +36,28 @@ async function getOrCreateProjectConfig(configName: string, projectId: string): 
     return projectConfig
 }
 
+type ProjectConfigWithProject = Omit<Database['public']['Tables']['project_configs']['Row'], 'project'> & {
+    project: Database['public']['Tables']['projects']['Row']
+}
+
+// List all configs user has access to
+export async function listConfigs(): Promise<ProjectConfigWithProject[]> {
+    const { data, error } = await supabase()
+        .from('project_configs')
+        .select(`
+            created_at,
+            id,
+            name,
+            project:projects!inner (*)
+        `)
+
+    if (error) {
+        throw error
+    }
+
+    return data
+}
+
 export async function getProjectByNameOrId(project: string): Promise<Database['public']['Tables']['projects']['Row']> {
     let laodByIdOrName = async () => {
         return await supabase()

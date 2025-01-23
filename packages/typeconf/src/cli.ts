@@ -2,7 +2,7 @@
 
 import { Command } from "commander";
 import {compilePackage, initPackage, VERSION} from "./index.js";
-import { getCloudConfigValue, setCloudConfigValue } from "./cloud/cli.js";
+import { getCloudConfigValue, listUserConfigs, setCloudConfigValue } from "./cloud/cli.js";
 
 const program = new Command();
 
@@ -48,6 +48,14 @@ cloud
   .description("Fetch configuration from cloud")
   .action(async (configName: string, options: { project: string }) => {
     await getCloudConfigValue(configName, options.project)
+  });
+
+cloud
+  .command("list-configs")
+  .description("List all configs user has access to")
+  .option("--format <format>", "Output format (json/table)", "table")
+  .action(async (options: { format: string }) => {
+    await listUserConfigs(options.format === "json")
   });
 
 program.parse(process.argv);
